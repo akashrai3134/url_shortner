@@ -16,6 +16,34 @@ const redis = new Redis({
   port: 6379,
 });
 
+async function rateLimiter(req, res, next) {
+    const clientIp = req.ip;
+    const rateLimitKey = `rate_limit:${clientIp}`;
+    const windowSizeInSeconds = 60; // 1 minute window
+    const maxRequests = 10; // Allow 10 requests per window
+  
+    try {
+      const currentCount = await redis.incr(rateLimitKey);
+  
+      if (currentCount === 1) {
+        // Set expiration time for the key when it's first created
+        await redis.expire(rateLimitKey, windowSizeInSeconds);
+      }
+  
+      if (currentCount > maxRequests) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+      }
+  
+      next();
+    } catch (error) {
+      console.error('Rate Limiting Error:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  }
+  
+  // Apply rate limiting middleware globally
+  app.use(rateLimiter);
+
 // Step 5: Base62 Encoding
 const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 function encodeBase62(num) {
