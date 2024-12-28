@@ -6,6 +6,9 @@ const crypto = require('crypto');
 const Redis = require('ioredis');
 const { getShortUrl, saveShortUrl, getLongUrl, incrementCount } = require('./dbOperations');
 const sequelize = require('./db'); // Import the Sequelize instance
+const cron = require('node-cron');
+const { Op } = require('sequelize');
+const UrlMapping = require('./models/UrlMapping');
 
 // Step 2: Middleware setup
 app.use(bodyParser.json());
@@ -131,6 +134,25 @@ app.get('/:shortUrl', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Cron job to remove URL mappings that have expired after 30 days
+cron.schedule('0 0 * * *', async () => {
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() - 30);
+
+  try {
+    await UrlMapping.destroy({
+      where: {
+        createdAt: {
+          [Op.lt]: expirationDate
+        }
+      }
+    });
+    console.log('Expired URL mappings removed successfully.');
+  } catch (error) {
+    console.error('Error removing expired URL mappings:', error);
   }
 });
 
