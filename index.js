@@ -4,7 +4,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const Redis = require('ioredis');
-const { getShortUrl, saveShortUrl, getLongUrl, incrementCount } = require('./dbOperations');
+const { getShortUrl, saveShortUrl, getLongUrl, incrementCount,getAllUrlMappings} = require('./dbOperations');
 const sequelize = require('./db'); // Import the Sequelize instance
 const cron = require('node-cron');
 const { Op } = require('sequelize');
@@ -68,9 +68,9 @@ async function generateShortUrl(longUrl) {
 
 // Step 7: API Endpoint for URL Shortening
 app.post('/shorten', async (req, res) => {
-   const { longUrl } = req.body;
+// const { longUrl } = req.body;
 
-//const longUrl = "https://www.youtube.com/watch?v=CdvGPoKJmsQ&ab_channel=cricket.com.au";
+const longUrl = "https://www.youtube.com/watch?v=CdvGPoKJmsQ&ab_channel=cricket.com.au";
 
   console.log('req.body', req.body);
   console.log('akash', longUrl);
@@ -134,6 +134,23 @@ app.get('/:shortUrl', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Step 20: Health Check API
+app.get('/health', async (req, res) => {
+  console.log('Health check request received.');
+  try {
+    // Check MySQL connection
+    await sequelize.authenticate();
+
+    // Check Redis connection
+    await redis.ping();
+
+    res.status(200).json({ status: 'healthy', message: 'Service is running smoothly.' });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', error: 'Service health check failed.' });
   }
 });
 

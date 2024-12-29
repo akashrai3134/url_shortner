@@ -22,9 +22,15 @@ async function incrementCount(shortUrl) {
   await UrlMapping.increment('count', { where: { shortUrl } });
 }
 
+// Function to get all URL mappings from the database
+async function getAllUrlMappings() {
+  return await UrlMapping.findAll();
+}
+
 module.exports = {
   getShortUrl,
   saveShortUrl,
   getLongUrl,
-  incrementCount
+  incrementCount,
+  getAllUrlMappings // Export the new function
 };
